@@ -2,7 +2,7 @@ const { nanoid } = require('nanoid')
 const books = require('./books')
 
 const AddBookHandler = (request,h) =>{
-    const {name,year,author,summary,publisher,pageCount,readPage,reading}=request.payload
+    const { name,year,author,summary,publisher,pageCount,readPage,reading }=request.payload
 
     if (!name){
        const response=h.response({
@@ -22,12 +22,12 @@ const AddBookHandler = (request,h) =>{
     }
 
     const id = nanoid(16)
-    const finished = (pageCount === readPage)
+    const finished = pageCount === readPage
     const insertedAt = new Date().toISOString()
-    const updateAt =insertedAt
+    const updatedAt =insertedAt
 
     const newBooks={
-        name,year,author,summary,publisher,pageCount,readPage,reading,finished,insertedAt,updateAt  
+        id,name,year,author,summary,publisher,pageCount,readPage,reading,finished,insertedAt,updatedAt,
     }
     books.push(newBooks)
 
@@ -36,13 +36,13 @@ const AddBookHandler = (request,h) =>{
     
     if(isSucces){
         const response=h.response({
-            status: 'succes',
+            status: 'success',
             message: 'Buku berhasil ditambahkan',
             data: {
                 bookId:id,
             }
            })
-           response.code(200)
+           response.code(201)
            return response
     }
     const response=h.response({
@@ -54,49 +54,56 @@ const AddBookHandler = (request,h) =>{
 }
 
 const GettAllBook = (request,h) =>{
-    const {name,reading,finished}=request.payload
+    const { name, reading, finished } = request.query; 
 
-    if(books.length >= 1){
-        const getBook=books
-        if(name){
-            getBook=getBook.filter((book)=>book.name.toLowerCase().include(name.toLowerCase()))
-        }
-        if (reading){
-            getBook=getBook.filter((book)=>book.reading === Boolean(Number(reading)))
-        }
-        if (finished){
-            getBook=getBook.filter((book)=>book.finished === Boolean(Number(finished)))
-        }
-        const response = h.response({
-            status:'succes',
-            data:{
-                books:getBook.map((book)=>({
-                    id:book.id,
-                    name:book.name,
-                    publisher:book.publisher
-                }))
-            }
-        })
-        response.code(200)
-        return response
+  if (books.length >= 1) {
+    let getBook = books.slice()
+
+    if (name) {
+      getBook = getBook.filter((book) =>
+        book.name.toLowerCase().includes(name.toLowerCase())
+      );
     }
+    if (reading !== undefined) { 
+      getBook = getBook.filter((book) => book.reading === Boolean(Number(reading)));
+    }
+    if (finished !== undefined) { 
+      getBook = getBook.filter((book) => book.finished === Boolean(Number(finished)));
+    }
+
     const response = h.response({
-        status:'succes',
-        data:{
-            books: [],
-        }
-    })
-    response.code(200)
-    return response
+      status: 'success',
+      data: {
+        books: getBook.map((book) => ({
+          id: book.id,
+          name: book.name,
+          publisher: book.publisher,
+        })),
+      },
+    });
+
+    response.code(200);
+    return response;
+  }
+
+  const response = h.response({
+    status: 'success',
+    data: {
+      books: [],
+    },
+  });
+
+  response.code(200)
+  return response
 }
 const GetDtlBook=(request,h)=>{
-    const { id }=request.params
+    const { bookId }=request.params
 
-    const book = book.filter((book)=>book.id === id)[0]
+    const book = books.filter((book)=>book.id === bookId)[0]
 
     if (book !== undefined){
         const response=h.response({
-            status: 'succes',
+            status: 'success',
             data:{
                 book,
             }
@@ -113,9 +120,11 @@ const GetDtlBook=(request,h)=>{
 }
 
 const UpdateBook=(request,h)=>{
+    const {bookId}=request.params
     const { name,year,author,summary,publisher,pageCount,readPage,reading } = request.payload
+    const updatedAt = new Date().toISOString();
 
-    if(!name){
+    if(name === undefined){
         const response =h.response({
             status: 'fail',
             message: 'Gagal memperbarui buku. Mohon isi nama buku'
@@ -131,11 +140,11 @@ const UpdateBook=(request,h)=>{
         response.code(400)
         return response
     }
-    const index = book.findIndex((book)=>book.id === id)
+    const index = books.findIndex((book)=>book.id === bookId)
 
     if (index !== -1 ){
         const finished = pageCount === readPage ? true : false;
-        const updatedAt = new Date().toISOString();
+        
 
         books[index]={
             ...books[index],
@@ -151,7 +160,7 @@ const UpdateBook=(request,h)=>{
             updatedAt,
         }
         const response = h.response({
-            status: 'succes',
+            status: 'success',
             message: 'Buku berhasil diperbarui'
         })
     
@@ -169,14 +178,14 @@ const UpdateBook=(request,h)=>{
 }
 
 const DeleteBook=(request,h)=>{
-    const { id } = request.params
+    const { bookId } = request.params
 
-    const index = books.findIndex((book)=>book.id === id)
+    const index = books.findIndex((book)=>book.id === bookId)
 
     if(index !== -1){
         books.splice(index,1)
         const response = h.response({
-            status: 'succes',
+            status: 'success',
             message: 'Buku berhasil dihapus'
         })
         response.code(200)
